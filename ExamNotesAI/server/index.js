@@ -199,10 +199,6 @@ app.use(cors({
   allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With", "Accept"]
 }));
 
-// 2. ✅ Explicit Preflight handler (Forces immediate 200 OK)
-app.options("*", (req, res) => {
-  res.sendStatus(200); 
-});
 
 // 3. ✅ Database Connection Middleware (Skips DB check for OPTIONS preflight)
 app.use(async (req, res, next) => {
