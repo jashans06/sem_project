@@ -13,14 +13,23 @@ import { clientOrigins } from "./utils/clientOrigins.js";
 
 const app = express();
 
-// ✅ Stripe webhook MUST be before express.json() middleware
+app.use(async (req, res, next) => {
+  try {
+     await connectDb();
+     next(); 
+    }
+  catch (e) { res.status(500).json({ message: "DB connection failed" }); }
+});
+
+
+//  Stripe webhook MUST be before express.json() middleware
 app.post(
   ["/api/credits/webhook", "/api/credit/webhook"],
   express.raw({ type: "application/json" }),
   stripeWebhook
 );
 
-// ✅ CORS
+//  CORS
 app.use(cors({
   origin: (origin, callback) => {
     callback(null, !origin || clientOrigins.includes(origin) ? origin : false);
@@ -52,7 +61,8 @@ app.use("/api/notes", notesRouter);
 app.use("/api/pdf", pdfRouter);
 app.use("/api/credit", creditRouter);
 
-app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
-  connectDb();
-});
+export default app;
+
+if (!process.env.VERCEL) {
+  app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+}
