@@ -30,12 +30,32 @@ app.post(
 );
 
 //  CORS
+// app.use(cors({
+//   origin: (origin, callback) => {
+//     callback(null, !origin || clientOrigins.includes(origin) ? origin : false);
+//   },
+//   credentials: true,
+//   methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"]
+// }));
+
 app.use(cors({
   origin: (origin, callback) => {
-    callback(null, !origin || clientOrigins.includes(origin) ? origin : false);
+    // 1. Allow server-to-server requests or tools like Postman (where origin is undefined)
+    if (!origin) {
+      return callback(null, true);
+    }
+    
+    // 2. Check if the incoming browser origin is in your whitelist array
+    if (clientOrigins.includes(origin)) {
+      return callback(null, true); // Pass true to allow it
+    } else {
+      // Pass an explicit error to block unauthorized origins cleanly
+      return callback(new Error("Blocked by CORS policy")); 
+    }
   },
   credentials: true,
-  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"]
+  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization"] // Essential for Google Auth headers
 }));
 
 // ✅ Fix Firebase popup COOP issue
