@@ -6,7 +6,6 @@
 // import cors from "cors";
 // import userRouter from "./routes/user.route.js";
 // import notesRouter from "./routes/generate.route.js";
-// import pdfRouter from "./routes/pdf.route.js";
 // import creditRouter from "./routes/credit.route.js";
 // import { stripeWebhook } from "./controllers/credits.controller.js";
 // import { clientOrigins } from "./utils/clientOrigins.js";
@@ -78,7 +77,6 @@
 // app.use("/api/auth", authRouter);
 // app.use("/api/user", userRouter);
 // app.use("/api/notes", notesRouter);
-// app.use("/api/pdf", pdfRouter);
 // app.use("/api/credit", creditRouter);
 
 // export default app;
@@ -98,7 +96,6 @@
 // import cors from "cors";
 // import userRouter from "./routes/user.route.js";
 // import notesRouter from "./routes/generate.route.js";
-// import pdfRouter from "./routes/pdf.route.js";
 // import creditRouter from "./routes/credit.route.js";
 // import { stripeWebhook } from "./controllers/credits.controller.js";
 // import { clientOrigins } from "./utils/clientOrigins.js";
@@ -159,7 +156,6 @@
 // app.use("/api/auth", authRouter);
 // app.use("/api/user", userRouter);
 // app.use("/api/notes", notesRouter);
-// app.use("/api/pdf", pdfRouter);
 // app.use("/api/credit", creditRouter);
 
 // export default app;
@@ -177,7 +173,6 @@ import cookieParser from "cookie-parser";
 import cors from "cors";
 import userRouter from "./routes/user.route.js";
 import notesRouter from "./routes/generate.route.js";
-import pdfRouter from "./routes/pdf.route.js";
 import creditRouter from "./routes/credit.route.js";
 import { stripeWebhook } from "./controllers/credits.controller.js";
 import { clientOrigins } from "./utils/clientOrigins.js";
@@ -195,7 +190,7 @@ app.use(cors({
     }
   },
   credentials: true,
-  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+  methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
   allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With", "Accept"]
 }));
 
@@ -242,7 +237,6 @@ app.get("/", (req, res) => {
 app.use("/api/auth", authRouter);
 app.use("/api/user", userRouter);
 app.use("/api/notes", notesRouter);
-app.use("/api/pdf", pdfRouter);
 app.use("/api/credit", creditRouter);
 
 export default app;
