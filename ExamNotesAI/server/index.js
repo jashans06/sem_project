@@ -223,7 +223,7 @@ app.use((req, res, next) => {
   next();
 });
 
-app.use(express.json());
+app.use(express.json({ limit: "200kb" }));
 app.use(cookieParser());
 
 const PORT = process.env.PORT || 5000;

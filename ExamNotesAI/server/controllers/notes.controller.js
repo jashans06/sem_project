@@ -2,7 +2,7 @@ import Notes from "../models/notes.model.js"
 
 export const getMyNotes = async (req,res) => {
   try {
-    const notes = await Notes.find({user : req.userId}).select("topic classLevel examType revisionMode includeDiagram includeChart createdAt").sort({createdAt: -1})
+    const notes = await Notes.find({user : req.userId}).select("topic classLevel examType revisionMode includeDiagram includeChart hasSource createdAt").sort({createdAt: -1})
     if (!notes) {
       return res.status(404).json({
         error: "Notes not found"
@@ -31,7 +31,9 @@ export const getSingleNotes = async (req,res) => {
         topic: notes.topic,
         classLevel: notes.classLevel,
         examType: notes.examType,
-        createdAt: notes.createdAt  
+        createdAt: notes.createdAt,
+        hasSource: notes.hasSource,
+        extras: notes.extras ?? {}
     })
   } catch (error) {
     return res.status(500).json({message:`getSingle notes error ${error}`})

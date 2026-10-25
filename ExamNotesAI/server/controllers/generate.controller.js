@@ -15,11 +15,18 @@ export const generateNotes = async (req, res) => {
       examType,
       revisionMode = false,
       includeDiagram = false,
-      includeChart = false
+      includeChart = false,
+      sourceText
     } = req.body;
 
     if(!topic){
       return res.status(400).json({message:"Topic is required"})
+    }
+    if (sourceText !== undefined &&
+      (typeof sourceText !== "string" || sourceText.length > 15000)) {
+      return res.status(400).json({
+        message: "Source text must be a string of 15,000 characters or fewer"
+      })
     }
 
     chargedUser = await chargeCredits(req.userId, 10)
@@ -45,7 +52,8 @@ export const generateNotes = async (req, res) => {
         examType,
         revisionMode,
         includeDiagram,
-        includeChart
+        includeChart,
+        sourceText
     });
 
     const aiResponse = await generateGeminiResponse(prompt);
@@ -58,6 +66,7 @@ export const generateNotes = async (req, res) => {
         revisionMode,
         includeDiagram,
         includeChart,
+        hasSource: Boolean(sourceText?.trim()),
         content: aiResponse
     });
 
