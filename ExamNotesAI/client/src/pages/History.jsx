@@ -51,6 +51,16 @@ function History() {
     }
   },[])
 
+  useEffect(() => {
+    const closeOnEscape = (event) => {
+      if (event.key === "Escape" && window.innerWidth < 1024) {
+        setIsSidebarOpen(false)
+      }
+    }
+    window.addEventListener("keydown", closeOnEscape)
+    return () => window.removeEventListener("keydown", closeOnEscape)
+  }, [])
+
   return (
     <div className='min-h-screen bg-gradient-to-br from-gray-100 to-gray-200 px-6 py-8'>
 
@@ -63,29 +73,36 @@ function History() {
           rounded-2xl
           bg-black/80 backdrop-blur-xl
           border border-white/10
-          px-8 py-6 items-start
-          flex justify-between md:items-center gap-4 flex-wrap
+          px-5 md:px-8 py-6 items-center
+          flex justify-between gap-4 flex-wrap
           shadow-[0_20px_45px_rgba(0,0,0,0.6)]
         "
       >
 
-        <div onClick={()=>navigate("/")} className='cursor-pointer'>
-          <h1 className='text-2xl font-bold
-          bg-gradient-to-r from-white via-gray-300 to-white
-          bg-clip-text text-transparent'>
-            ExamEnAI
-          </h1>
-          
-          <p className='text-sm text-gray-300 mt-1'>
-            AI-powered exam-oriented notes & revision
-          </p>
+        <div className="flex items-center gap-4">
+          <button
+            type="button"
+            onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+            aria-label={isSidebarOpen ? "Close notes sidebar" : "Open notes sidebar"}
+            aria-expanded={isSidebarOpen}
+            className="lg:hidden text-white text-2xl"
+          >
+            {isSidebarOpen ? "✕" : <GiHamburgerMenu />}
+          </button>
+          <div onClick={()=>navigate("/")} className='cursor-pointer'>
+            <h1 className='text-2xl font-bold
+            bg-gradient-to-r from-white via-gray-300 to-white
+            bg-clip-text text-transparent'>
+              ExamEnAI
+            </h1>
+
+            <p className='text-sm text-gray-300 mt-1'>
+              AI-powered exam-oriented notes & revision
+            </p>
+          </div>
         </div>
         
         <div className="flex items-center gap-4 flex-wrap">
-          {!isSidebarOpen && <button onClick={()=>setIsSidebarOpen(true)} className='lg:hidden text-white text-2xl'>
-            <GiHamburgerMenu />
-          </button>} 
-
           <button
           className="flex items-center gap-2 px-4 py-2 
           rounded-full bg-white/10 border border-white/20 text-white text-sm" 
@@ -109,6 +126,17 @@ function History() {
 
       <div className='grid grid-cols-1 lg:grid-cols-4 gap-6'>
         <AnimatePresence>
+          {isSidebarOpen && (
+            <motion.button
+              type="button"
+              aria-label="Close notes sidebar"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setIsSidebarOpen(false)}
+              className="fixed inset-0 z-40 bg-black/40 lg:hidden"
+            />
+          )}
         
           {isSidebarOpen &&
           <motion.div
@@ -128,12 +156,8 @@ function History() {
           shadow-[0_20px_45px_rgba(0,0,0,0.6)]
           p-5
           overflow-y-auto'>
-            <button onClick={()=>setIsSidebarOpen(false)} className='lg:hidden text-white mb-4'>
-              ⬅️ back
-            </button>
-
             <div className='mb-4 space-y-1'>
-              <button onClick={()=>navigate("/notes")} className='w-full px-3 py-2
+              <button onClick={()=>{setIsSidebarOpen(false); navigate("/notes")}} className='w-full px-3 py-2
               rounded-lg text-sm text-gray-200 bg-white/10 text-start hover:bg-white/20'>
                 ➕ New Notes
               </button>
@@ -153,7 +177,7 @@ function History() {
             <ul className='space-y-3'>
             
               {topics.map((t,i)=>(
-                <li key={i} onClick={()=>{openNotes(t._id)}} className={`
+                <li key={i} onClick={()=>{openNotes(t._id); if (window.innerWidth < 1024) setIsSidebarOpen(false)}} className={`
               cursor-pointer rounded-xl p-3 border transition-all
               ${
                 activeNoteId === t._id
@@ -213,9 +237,11 @@ function History() {
 
         {!loading && selectedNote && (
           <FinalResult
+            key={selectedNote._id}
             result={selectedNote.content}
             noteId={selectedNote._id}
             topic={selectedNote.topic}
+            initialExtras={selectedNote.extras}
           />
         )}
 

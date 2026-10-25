@@ -34,3 +34,21 @@ export const generateNotes = async (payload) => {
     throw error 
   }
 }
+
+export const generateNoteExtra = async (noteId, type, options = {}) => {
+  const result = await axios.post(
+    `${serverUrl}/api/notes/${noteId}/extras`,
+    { type, ...options },
+    { withCredentials: true }
+  )
+  return result.data
+}
+
+export const saveQuizAttempt = async (noteId, attempt) => {
+  const result = await axios.post(
+    `${serverUrl}/api/notes/${noteId}/quiz-attempt`,
+    attempt,
+    { withCredentials: true }
+  )
+  return result.data
+}

@@ -1,11 +1,26 @@
 import React, { useState, useEffect  } from "react"
 import { motion } from "motion/react"
+import * as pdfjsLib from "pdfjs-dist"
 import { generateNotes } from "../services/api"
 import { useDispatch } from "react-redux";
 import { updateCredits } from "../redux/userSlice";
 
+pdfjsLib.GlobalWorkerOptions.workerSrc = new URL(
+  "pdfjs-dist/build/pdf.worker.min.mjs",
+  import.meta.url
+).toString()
+
+const MAX_SOURCE_LENGTH = 15000
+const MAX_PDF_SIZE = 10 * 1024 * 1024
+
 function TopicForm({setResult, setNoteId, setTopic: setResultTopic, setLoading, loading, setError}) {
     const [topic, setTopic] = useState("");
+    const [inputMode, setInputMode] = useState("topic");
+    const [sourceText, setSourceText] = useState("");
+    const [pdfName, setPdfName] = useState("");
+    const [pdfTruncated, setPdfTruncated] = useState(false);
+    const [pdfTooShort, setPdfTooShort] = useState(false);
+    const [extractingPdf, setExtractingPdf] = useState(false);
     const [classLevel, setClassLevel] = useState("");
     const [examType, setExamType] = useState("");
     const [revisionMode, setRevisionMode] = useState(false);
@@ -15,10 +30,69 @@ function TopicForm({setResult, setNoteId, setTopic: setResultTopic, setLoading, 
     const [progressText, setProgressText] = useState("");
     const dispatch = useDispatch()
 
+    const handlePdfUpload = async (event) => {
+      const file = event.target.files?.[0]
+      if (!file) return
+
+      setError("")
+      setSourceText("")
+      setPdfName("")
+      setPdfTruncated(false)
+      setPdfTooShort(false)
+
+      if (file.type !== "application/pdf" && !file.name.toLowerCase().endsWith(".pdf")) {
+        setError("Please choose a PDF file")
+        event.target.value = ""
+        return
+      }
+      if (file.size > MAX_PDF_SIZE) {
+        setError("PDF files must be 10 MB or smaller")
+        event.target.value = ""
+        return
+      }
+
+      setExtractingPdf(true)
+      try {
+        const pdf = await pdfjsLib.getDocument({ data: await file.arrayBuffer() }).promise
+        const pages = []
+        for (let pageNumber = 1; pageNumber <= pdf.numPages; pageNumber += 1) {
+          const page = await pdf.getPage(pageNumber)
+          const pageContent = await page.getTextContent()
+          pages.push(pageContent.items
+            .filter((item) => "str" in item)
+            .map((item) => item.str)
+            .join(" "))
+        }
+
+        const extractedText = pages.join("\n").replace(/\s+/g, " ").trim()
+        const limitedText = extractedText.slice(0, MAX_SOURCE_LENGTH)
+        setSourceText(limitedText)
+        setPdfName(file.name)
+        setPdfTruncated(extractedText.length > MAX_SOURCE_LENGTH)
+        setPdfTooShort(extractedText.length < 200)
+        setTopic((currentTopic) => currentTopic.trim() || file.name.replace(/\.pdf$/i, ""))
+      } catch (error) {
+        console.error("Failed to extract PDF text:", error)
+        setError("Could not read this PDF. Try another PDF or paste its text instead.")
+      } finally {
+        setExtractingPdf(false)
+      }
+    }
+
     const handleSubmit = async () => {
       if (!topic.trim()) {
         setError("Please enter the topic")
         return;
+      }
+      if (inputMode !== "topic" && !sourceText.trim()) {
+        setError(inputMode === "pdf"
+          ? "Upload a PDF with selectable text before generating notes"
+          : "Please paste the source text")
+        return
+      }
+      if (inputMode === "pdf" && pdfTooShort) {
+        setError("This PDF has too little selectable text. Try a text-based PDF or paste the text.")
+        return
       }
       setError("")
       setLoading(true)
@@ -32,13 +106,19 @@ function TopicForm({setResult, setNoteId, setTopic: setResultTopic, setLoading, 
           examType,
           revisionMode,
           includeDiagram,
-          includeChart})
+          includeChart,
+          sourceText: inputMode === "topic" ? undefined : sourceText.trim()})
           setResult(result.data)
           setNoteId(result.noteId)
           setResultTopic(topic)
           setLoading(false)
           setClassLevel("")
           setTopic("")
+          setInputMode("topic")
+          setSourceText("")
+          setPdfName("")
+          setPdfTruncated(false)
+          setPdfTooShort(false)
           setExamType("")
           setIncludeChart(false)
           setRevisionMode(false)
@@ -96,6 +176,30 @@ function TopicForm({setResult, setNoteId, setTopic: setResultTopic, setLoading, 
       border-white/10 shadow-[0_25px_60px_rgba(0,0,0,0.75)] 
       p-8 space-y-6 text-white">
 
+        <div className="flex flex-wrap gap-2 rounded-xl border border-white/10 bg-white/5 p-1">
+          {[
+            ["topic", "Topic"],
+            ["text", "Paste text"],
+            ["pdf", "Upload PDF"]
+          ].map(([mode, label]) => (
+            <button
+              key={mode}
+              type="button"
+              onClick={() => {
+                setInputMode(mode)
+                setError("")
+              }}
+              className={`rounded-lg px-4 py-2 text-sm transition ${
+                inputMode === mode
+                  ? "bg-white text-black shadow"
+                  : "text-gray-300 hover:bg-white/10"
+              }`}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+
         <input
         type="text"
         className="w-full p-3 rounded-xl 
@@ -106,6 +210,48 @@ function TopicForm({setResult, setNoteId, setTopic: setResultTopic, setLoading, 
         placeholder="Enter topic (e.g. Web Development)"
         onChange={(e) => setTopic(e.target.value)}
         value={topic}/>
+
+        {inputMode === "text" && (
+          <div className="space-y-2">
+            <textarea
+              className="min-h-48 w-full resize-y rounded-xl border border-white/20 bg-white/10 p-3 text-white placeholder-gray-400 backdrop-blur-lg focus:outline-none focus:ring-2 focus:ring-white/30"
+              placeholder="Paste syllabus, textbook, or study material here..."
+              maxLength={MAX_SOURCE_LENGTH}
+              value={sourceText}
+              onChange={(event) => setSourceText(event.target.value)}
+            />
+            <p className="text-right text-xs text-gray-400">
+              {sourceText.length.toLocaleString()} / {MAX_SOURCE_LENGTH.toLocaleString()} characters
+            </p>
+          </div>
+        )}
+
+        {inputMode === "pdf" && (
+          <div className="space-y-2">
+            <input
+              type="file"
+              accept="application/pdf,.pdf"
+              onChange={handlePdfUpload}
+              disabled={extractingPdf}
+              className="w-full rounded-xl border border-white/20 bg-white/10 p-3 text-sm text-gray-200 file:mr-4 file:rounded-lg file:border-0 file:bg-white file:px-3 file:py-2 file:font-medium file:text-black"
+            />
+            <p className="text-xs text-gray-400">PDF only, up to 10 MB. Selectable text is required.</p>
+            {extractingPdf && <p className="text-sm text-gray-300">Extracting PDF text...</p>}
+            {pdfName && !extractingPdf && (
+              <p className="text-sm text-gray-300">
+                {pdfName} · {sourceText.length.toLocaleString()} characters extracted
+              </p>
+            )}
+            {pdfTruncated && (
+              <p className="text-sm text-amber-300">Using first 15,000 characters.</p>
+            )}
+            {pdfTooShort && (
+              <p className="text-sm text-amber-300">
+                This looks like a scanned PDF — no selectable text found.
+              </p>
+            )}
+          </div>
+        )}
 
         <input
         type="text"
@@ -144,12 +290,12 @@ function TopicForm({setResult, setNoteId, setTopic: setResultTopic, setLoading, 
         onClick={handleSubmit}
         whileHover={!loading ? { scale: 1.02} : {}}
         whileTap={!loading ? { scale: 0.95 } : {}}
-        disabled={loading}
+        disabled={loading || extractingPdf || (inputMode === "pdf" && pdfTooShort)}
         className={`w-full mt-4 py-3 rounded-xl 
             font-semibold flex items-center justify-center gap-3 
             transition
             ${
-            loading
+            loading || extractingPdf || (inputMode === "pdf" && pdfTooShort)
                 ? "bg-gray-300 text-gray-600 cursor-not-allowed"
                 : "bg-gradient-to-br from-white to-gray-200 text-black shadow-[0_15px_35px_rgba(0,0,0,0.4)]"
             }
