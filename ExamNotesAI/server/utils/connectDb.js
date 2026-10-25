@@ -15,10 +15,16 @@ let pending = null;
 const connectDb = async () => {
   if (mongoose.connection.readyState === 1) return;
   if (!pending) {
-    pending = mongoose.connect(process.env.MONGODB_URL).catch((e) => {
-      pending = null;
-      throw e;
-    });
+    pending = mongoose.connect(process.env.MONGODB_URL)
+      .then((connection) => {
+        console.info("MongoDB connected successfully");
+        return connection;
+      })
+      .catch((error) => {
+        console.error("MongoDB connection failed:", error.message);
+        pending = null;
+        throw error;
+      });
   }
   await pending;
 };
