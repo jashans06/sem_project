@@ -71,8 +71,8 @@ function MermaidSetup({diagram}) {
   }, [diagram]);
 
   return(
-    <div className='bg-white border rounded-lg p-4 overflow-x-auto'>
-        <div ref={containerRef}/>
+    <div className='mermaid-print-container bg-white border rounded-lg p-4 overflow-x-auto max-w-full break-inside-avoid print:break-inside-avoid'>
+        <div ref={containerRef} className="max-w-full"/>
     </div>
   )
 }

@@ -37,7 +37,7 @@ function History() {
     try {
       const res = await axios.get(serverUrl + `/api/notes/${noteId}`, {withCredentials:true})
       const data = Array.isArray(res.data) ? res.data[0] : res.data
-      setSelectedNote(data.contest)
+      setSelectedNote(data)
       setLoading(false)
     } catch (error) {
       console.log(error)
@@ -58,7 +58,7 @@ function History() {
         initial={{ opacity: 0, y: -15 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.6 }}
-        className="
+        className="print:hidden
           mb-10
           rounded-2xl
           bg-black/80 backdrop-blur-xl
@@ -116,7 +116,7 @@ function History() {
           animate={{ x: 0 }}
           exit={{ x: -320 }}
           transition={{ type: "spring", stiffness: 260, damping: 30 }}
-          className='fixed lg:static
+          className='fixed lg:static print:hidden
           top-0 left-0 z-50 lg:z-auto
           w-72 lg:w-auto
           h-full lg:h-[75vh]
@@ -211,7 +211,13 @@ function History() {
           </div>
         )}
 
-        {!loading && selectedNote && <FinalResult result={selectedNote}/>}
+        {!loading && selectedNote && (
+          <FinalResult
+            result={selectedNote.content}
+            noteId={selectedNote._id}
+            topic={selectedNote.topic}
+          />
+        )}
 
       </motion.div>
 

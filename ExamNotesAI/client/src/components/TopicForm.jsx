@@ -4,7 +4,7 @@ import { generateNotes } from "../services/api"
 import { useDispatch } from "react-redux";
 import { updateCredits } from "../redux/userSlice";
 
-function TopicForm({setResult, setLoading, loading, setError}) {
+function TopicForm({setResult, setNoteId, setTopic: setResultTopic, setLoading, loading, setError}) {
     const [topic, setTopic] = useState("");
     const [classLevel, setClassLevel] = useState("");
     const [examType, setExamType] = useState("");
@@ -23,6 +23,8 @@ function TopicForm({setResult, setLoading, loading, setError}) {
       setError("")
       setLoading(true)
       setResult(null)
+      setNoteId(null)
+      setResultTopic("")
       try {
         const result = await generateNotes({
           topic,
@@ -32,6 +34,8 @@ function TopicForm({setResult, setLoading, loading, setError}) {
           includeDiagram,
           includeChart})
           setResult(result.data)
+          setNoteId(result.noteId)
+          setResultTopic(topic)
           setLoading(false)
           setClassLevel("")
           setTopic("")

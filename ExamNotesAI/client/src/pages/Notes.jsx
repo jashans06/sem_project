@@ -12,6 +12,8 @@ function Notes() {
   const credits=userData.credits
   const [loading, setLoading] = useState(false)
   const [result, setResult] = useState(null)
+  const [noteId, setNoteId] = useState(null)
+  const [resultTopic, setResultTopic] = useState("")
   const [error, setError] = useState(null)
 
   return (
@@ -21,7 +23,7 @@ function Notes() {
         initial={{ opacity: 0, y: -15 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5 }}
-        className="mb-10
+        className="mb-10 print:hidden
         rounded-2xl
         bg-black/80 backdrop-blur-xl
         border border-white/10
@@ -70,8 +72,9 @@ function Notes() {
       </motion.header>
 
       <motion.div
-      className='mb-12'>
-        <TopicForm loading={loading} setResult={setResult} setLoading={setLoading} 
+      className='mb-12 print:hidden'>
+        <TopicForm loading={loading} setResult={setResult} setNoteId={setNoteId}
+        setTopic={setResultTopic} setLoading={setLoading}
         setError={setError}/>
       </motion.div>
 
@@ -79,20 +82,20 @@ function Notes() {
         <motion.div
         animate={{ opacity: [0.4, 1, 0.4] }}
         transition={{ repeat: Infinity, duration: 1.2 }}
-        className="text-center text-black font-medium mb-6"
+        className="text-center text-black font-medium mb-6 print:hidden"
       >
         Generating exam-focused notes...
       </motion.div>
     )}
 
     {error && (
-      <div className="mb-6 text-center text-red-600 font-medium">
+      <div className="mb-6 text-center text-red-600 font-medium print:hidden">
         {error}
       </div>
     )}
 
       {!result && <motion.div whileHover={{ scale: 1.02 }}
-      className="
+      className="print:hidden
       h-64
       rounded-2xl
       flex flex-col items-center justify-center
@@ -116,7 +119,7 @@ function Notes() {
   lg:grid lg:grid-cols-4
   gap-6'>
 
-  <div className='lg:col-span-1'>
+  <div className='lg:col-span-1 print:hidden'>
     <SidebarS result={result}/>
   </div>
 
@@ -125,7 +128,7 @@ function Notes() {
   bg-white
   shadow-[0_15px_40px_rgba(0,0,0,0.15)]
   p-6'>
-    <FinalResult result={result}/>
+    <FinalResult result={result} noteId={noteId} topic={resultTopic}/>
 
   </div>
 

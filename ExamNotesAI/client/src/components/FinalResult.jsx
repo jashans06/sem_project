@@ -1,9 +1,7 @@
-import { useEffect, useRef } from 'react'
 import { useState } from 'react'
 import MermaidSetup from './MermaidSetup'
 import ReactMarkdown from 'react-markdown'
 import RechartSetUp from './RechartSetup.jsx'
-import { downloadPdf } from '../services/api.js'
 
 const markDownComponent = {
     h1: ({ children }) => (
@@ -35,8 +33,22 @@ const markDownComponent = {
       <li className="marker:text-indigo-500">{children}</li>
     ),
   }
-function FinalResult({result}) {
+function FinalResult({result, noteId, topic}) {
   const[quickRevision, setQuickRevision] = useState(false);
+
+  const printNotes = () => {
+    setQuickRevision(false)
+    setTimeout(() => {
+      const originalTitle = document.title
+      document.title = `ExamEnAI - ${topic || "Notes"}`
+      try {
+        window.print()
+      } finally {
+        document.title = originalTitle
+      }
+    }, 100)
+  }
+
   if(
     !result||
     !result.subTopics ||
@@ -49,7 +61,7 @@ function FinalResult({result}) {
   }
 
   return (
-  <div className='mt-6 p-3 space-y-10 bg-white'>
+  <div id="print-area" data-note-id={noteId} className='mt-6 p-3 space-y-10 bg-white'>
 
     <div className='flex flex-col md:flex-row md:items-center md:justify-between gap-4'>
 
@@ -59,14 +71,14 @@ function FinalResult({result}) {
         📄 Generated Notes
       </h2>
 
-      <div className='flex gap-3'>
+      <div className='flex gap-3 print:hidden'>
         <button onClick={() => setQuickRevision(!quickRevision)} className={`
         px-4 py-2 rounded-lg text-sm font-medium transition
         ${quickRevision
           ? "bg-green-600 text-white"
           : "bg-green-100 text-green-700 hover:bg-green-200"}
         `}> {quickRevision ? "Exit Revision Mode" : "Quick Revision (5 min)"}</button>
-        <button onClick={()=>downloadPdf(result)}
+        <button onClick={printNotes}
         className='px-4 py-2 rounded-lg text-sm font-medium bg-indigo-600
         text-white hover:bg-indigo-700'>
           ⬇️ Download PDF
@@ -74,7 +86,7 @@ function FinalResult({result}) {
       </div>
     </div>
 
-    {!quickRevision && <section>
+    {!quickRevision && <section className="break-inside-avoid print:break-inside-avoid">
       <SectionHeader icon="⭐" title="Sub Topics" color="indigo"/>
       {
           Object.entries(result.subTopics).map(([star, topics])=>(
@@ -94,7 +106,7 @@ function FinalResult({result}) {
         }
     </section>}
 
-    {!quickRevision && <section>
+    {!quickRevision && <section className="break-inside-avoid print:break-inside-avoid">
       <SectionHeader icon="📝" title="Daitaled Notes" color="purple"/>
       <div className='bg-white border border-gray-200 rounded-xl p-6'>
         <ReactMarkdown components={markDownComponent}>
@@ -104,7 +116,7 @@ function FinalResult({result}) {
     </section>}
 
     {quickRevision &&
-    <section className='rounded-xl bg-gradient-to-r from-green-100 to-green-50 border
+    <section className='break-inside-avoid print:break-inside-avoid rounded-xl bg-gradient-to-r from-green-100 to-green-50 border
     border-green-200 p-6'>
       <h3 className='font-bold text-green-700 mb-3 text-lg'>
         ⚡ Exam Quick Revision Points
@@ -116,7 +128,7 @@ function FinalResult({result}) {
       </ul>
     </section>}
 
-    {result.diagram?.data && <section>
+    {result.diagram?.data && <section className="break-inside-avoid print:break-inside-avoid">
       <SectionHeader icon="📊" title="Diagram" color="cyan"/>
 
       <MermaidSetup diagram={result.diagram?.data}/>
@@ -128,7 +140,7 @@ function FinalResult({result}) {
       </section>}
 
       {result.charts?.length > 0 &&
-      <section>
+      <section className="break-inside-avoid print:break-inside-avoid">
         <SectionHeader icon="📊" title="Visual Charts" color="indigo" />
         <RechartSetUp charts={result.charts} />
         <p className="mt-3 text-xs text-gray-500 italic">
@@ -144,7 +156,7 @@ function FinalResult({result}) {
         </p>
       )}
 
-    <section>
+    <section className="break-inside-avoid print:break-inside-avoid">
       <SectionHeader icon="❓" title="Important Questions" color="rose"/>
 
       <p className='font-medium'>Short Questions:</p>
@@ -163,7 +175,7 @@ function FinalResult({result}) {
 
       <p className='font-medium mt-4'>Diagram Question:</p>
       <ul className='list-disc ml-6 text-gray-700'>
-        <li>{result.questions.diagram}</li>
+        {result.questions?.diagram && <li>{result.questions.diagram}</li>}
       </ul>
 
     </section>

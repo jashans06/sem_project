@@ -34,26 +34,3 @@ export const generateNotes = async (payload) => {
     throw error 
   }
 }
-
-export const downloadPdf = async (result) => {
-  try {
-    const response = await axios.post(serverUrl+ "/api/pdf/generate-pdf" , {result} , {
-      responseType:"blob" , withCredentials:true
-    })
-
-    const blob = new Blob([response.data], {
-    type: "application/pdf"
-    });
-
-    const url = window.URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = "ExamEnAI.pdf";
-    link.click();
-
-    window.URL.revokeObjectURL(url);
-  } catch (error) {
-    throw new Error("PDF download failed", { cause: error });
-
-  }
-}
