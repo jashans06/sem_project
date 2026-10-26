@@ -3,6 +3,7 @@ import { generateGeminiResponse } from "../services/gemini.services.js"
 import { buildPrompt } from "../utils/promptBuilder.js"
 import Notes from "../models/notes.model.js"
 import { chargeCredits, refundCredits } from "../utils/credits.js"
+import { normalizeNoteLanguage } from "../utils/noteLanguages.js"
 
 export const generateNotes = async (req, res) => {
   let chargedUser = null
@@ -16,8 +17,10 @@ export const generateNotes = async (req, res) => {
       revisionMode = false,
       includeDiagram = false,
       includeChart = false,
-      sourceText
+      sourceText,
+      language: requestedLanguage
     } = req.body;
+    const language = normalizeNoteLanguage(requestedLanguage)
 
     if(!topic){
       return res.status(400).json({message:"Topic is required"})
@@ -53,10 +56,18 @@ export const generateNotes = async (req, res) => {
         revisionMode,
         includeDiagram,
         includeChart,
-        sourceText
+        sourceText,
+        language
     });
 
     const aiResponse = await generateGeminiResponse(prompt);
+    const generatedText = JSON.stringify(aiResponse)
+    if (
+      (language === "Hinglish" && /[\u0900-\u097f]/u.test(generatedText)) ||
+      (language === "Hindi" && !/[\u0900-\u097f]/u.test(generatedText))
+    ) {
+      console.warn(`Generated note may not follow the requested ${language} script`)
+    }
 
     createdNote = await Notes.create({
         user: chargedUser._id,
@@ -66,6 +77,7 @@ export const generateNotes = async (req, res) => {
         revisionMode,
         includeDiagram,
         includeChart,
+        language,
         hasSource: Boolean(sourceText?.trim()),
         content: aiResponse
     });
@@ -88,7 +100,8 @@ export const generateNotes = async (req, res) => {
     return res.status(200).json({
         data: aiResponse,
         noteId: createdNote._id,
-        creditsLeft: updatedUser.credits
+        creditsLeft: updatedUser.credits,
+        language
     });
 
   } catch (error) {

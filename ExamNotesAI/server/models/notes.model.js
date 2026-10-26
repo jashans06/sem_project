@@ -1,4 +1,6 @@
 import mongoose from "mongoose";
+import { NOTE_LANGUAGES, DEFAULT_NOTE_LANGUAGE } from "../utils/noteLanguages.js"
+
 const notesSchema =  new mongoose.Schema({
     user: {
         type: mongoose.Schema.Types.ObjectId,
@@ -13,6 +15,11 @@ const notesSchema =  new mongoose.Schema({
 
     classLevel: String,
     examType: String,
+    language: {
+        type: String,
+        enum: NOTE_LANGUAGES,
+        default: DEFAULT_NOTE_LANGUAGE
+    },
 
     revisionMode: {
         type: Boolean,
