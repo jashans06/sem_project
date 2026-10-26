@@ -42,7 +42,7 @@ export const MarkdownComponents = {
       <li className="marker:text-indigo-500">{children}</li>
     ),
   }
-function FinalResult({result, noteId, topic, initialExtras}) {
+function FinalResult({result, noteId, topic, language = "English", initialExtras}) {
   const[quickRevision, setQuickRevision] = useState(false);
   const [activeTab, setActiveTab] = useState("notes")
   const [extras, setExtras] = useState(initialExtras || {})
@@ -87,10 +87,11 @@ function FinalResult({result, noteId, topic, initialExtras}) {
   const printNotes = () => {
     setQuickRevision(false)
     setActiveTab("notes")
-    setTimeout(() => {
+    setTimeout(async () => {
       const originalTitle = document.title
       document.title = `ExamEnAI - ${topic || "Notes"}`
       try {
+        await document.fonts?.ready
         window.print()
       } finally {
         document.title = originalTitle
@@ -110,7 +111,12 @@ function FinalResult({result, noteId, topic, initialExtras}) {
   }
 
   return (
-  <div id="print-area" data-note-id={noteId} className='mt-6 p-3 space-y-10 bg-white'>
+  <div
+    id="print-area"
+    lang={language === "Hindi" ? "hi" : language === "Hinglish" ? "hi-Latn" : "en"}
+    data-note-id={noteId}
+    className={`mt-6 p-3 space-y-10 bg-white ${language === "Hindi" ? "leading-relaxed" : ""}`}
+  >
 
     <div className="flex flex-wrap gap-2 print:hidden" role="tablist" aria-label="Study materials">
       {[

@@ -14,6 +14,7 @@ function Notes() {
   const [result, setResult] = useState(null)
   const [noteId, setNoteId] = useState(null)
   const [resultTopic, setResultTopic] = useState("")
+  const [resultLanguage, setResultLanguage] = useState("English")
   const [error, setError] = useState(null)
 
   return (
@@ -74,7 +75,7 @@ function Notes() {
       <motion.div
       className='mb-12 print:hidden'>
         <TopicForm loading={loading} setResult={setResult} setNoteId={setNoteId}
-        setTopic={setResultTopic} setLoading={setLoading}
+        setTopic={setResultTopic} setLanguage={setResultLanguage} setLoading={setLoading}
         setError={setError}/>
       </motion.div>
 
@@ -128,7 +129,7 @@ function Notes() {
   bg-white
   shadow-[0_15px_40px_rgba(0,0,0,0.15)]
   p-6'>
-    <FinalResult result={result} noteId={noteId} topic={resultTopic}/>
+    <FinalResult result={result} noteId={noteId} topic={resultTopic} language={resultLanguage}/>
 
   </div>
 

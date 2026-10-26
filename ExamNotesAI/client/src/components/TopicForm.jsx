@@ -1,9 +1,17 @@
 import React, { useState, useEffect  } from "react"
 import { motion } from "motion/react"
+import { FiChevronDown } from "react-icons/fi"
 import * as pdfjsLib from "pdfjs-dist"
 import { generateNotes } from "../services/api"
 import { useDispatch } from "react-redux";
 import { updateCredits } from "../redux/userSlice";
+import {
+  DEFAULT_NOTE_LANGUAGE,
+  getRememberedNoteLanguage,
+  isNoteLanguage,
+  NOTE_LANGUAGES,
+  rememberNoteLanguage
+} from "../utils/noteLanguages"
 
 pdfjsLib.GlobalWorkerOptions.workerSrc = new URL(
   "pdfjs-dist/build/pdf.worker.min.mjs",
@@ -13,7 +21,7 @@ pdfjsLib.GlobalWorkerOptions.workerSrc = new URL(
 const MAX_SOURCE_LENGTH = 15000
 const MAX_PDF_SIZE = 10 * 1024 * 1024
 
-function TopicForm({setResult, setNoteId, setTopic: setResultTopic, setLoading, loading, setError}) {
+function TopicForm({setResult, setNoteId, setTopic: setResultTopic, setLanguage: setResultLanguage, setLoading, loading, setError}) {
     const [topic, setTopic] = useState("");
     const [inputMode, setInputMode] = useState("topic");
     const [sourceText, setSourceText] = useState("");
@@ -23,12 +31,17 @@ function TopicForm({setResult, setNoteId, setTopic: setResultTopic, setLoading, 
     const [extractingPdf, setExtractingPdf] = useState(false);
     const [classLevel, setClassLevel] = useState("");
     const [examType, setExamType] = useState("");
+    const [language, setLanguage] = useState(getRememberedNoteLanguage);
     const [revisionMode, setRevisionMode] = useState(false);
     const [includeDiagram, setIncludeDiagram] = useState(false);
     const [includeChart, setIncludeChart] = useState(false);
     const [progress, setProgress] = useState(0);
     const [progressText, setProgressText] = useState("");
     const dispatch = useDispatch()
+
+    useEffect(() => {
+      rememberNoteLanguage(language)
+    }, [language])
 
     const handlePdfUpload = async (event) => {
       const file = event.target.files?.[0]
@@ -107,10 +120,12 @@ function TopicForm({setResult, setNoteId, setTopic: setResultTopic, setLoading, 
           revisionMode,
           includeDiagram,
           includeChart,
+          language,
           sourceText: inputMode === "topic" ? undefined : sourceText.trim()})
           setResult(result.data)
           setNoteId(result.noteId)
           setResultTopic(topic)
+          setResultLanguage(result.language || DEFAULT_NOTE_LANGUAGE)
           setLoading(false)
           setClassLevel("")
           setTopic("")
@@ -274,6 +289,36 @@ function TopicForm({setResult, setNoteId, setTopic: setResultTopic, setLoading, 
         placeholder='Exam Type(e.g. SPPU, CBSE, JEE, NEET)'
         onChange={(e) => setExamType(e.target.value)}
         value={examType}/>
+
+        <label className="block space-y-2">
+          <span className="text-sm font-medium text-gray-200">Notes language</span>
+          <span className="relative block">
+            <select
+              value={language}
+              onChange={(event) => {
+                const value = event.target.value
+                setLanguage(isNoteLanguage(value) ? value : DEFAULT_NOTE_LANGUAGE)
+              }}
+              disabled={loading}
+              className="w-full appearance-none rounded-xl border border-white/20 bg-white/10 p-3 pr-10 text-white backdrop-blur-lg focus:outline-none focus:ring-2 focus:ring-white/30 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              {NOTE_LANGUAGES.map(({ value, label }) => (
+                <option key={value} value={value} className="bg-gray-900 text-white">
+                  {label}
+                </option>
+              ))}
+            </select>
+            <FiChevronDown
+              aria-hidden="true"
+              className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-gray-300"
+            />
+          </span>
+          {language !== "English" && (
+            <span className="block text-xs text-gray-400">
+              Technical terms stay in English, and diagrams and charts use English labels.
+            </span>
+          )}
+        </label>
 
         <div className='flex flex-col md:flex-row gap-6'>
             <Toggle label="Exam Revision Mode" checked={revisionMode} 

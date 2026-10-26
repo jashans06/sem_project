@@ -5,7 +5,9 @@ import { motion, AnimatePresence } from "motion/react"
 import { useNavigate } from 'react-router'
 import { useSelector } from 'react-redux'
 import { GiHamburgerMenu } from "react-icons/gi";
+import { FiGlobe } from "react-icons/fi"
 import FinalResult from '../components/FinalResult'
+import { getNoteLanguageLabel } from '../utils/noteLanguages'
 
 function History() {
   const [topics , setTopics] = useState([])
@@ -195,6 +197,10 @@ function History() {
 
                   {t.examType && <span className='px-2 py-0.5 rounded-full bg-purple-500/20
                   text-purple-300'>{t.examType}</span>}
+                  <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/20 px-2 py-0.5 text-emerald-300">
+                    <FiGlobe aria-hidden="true" />
+                    {getNoteLanguageLabel(t.language || "English")}
+                  </span>
                   
                 </div>
 
@@ -241,6 +247,7 @@ function History() {
             result={selectedNote.content}
             noteId={selectedNote._id}
             topic={selectedNote.topic}
+            language={selectedNote.language || "English"}
             initialExtras={selectedNote.extras}
           />
         )}
