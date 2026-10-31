@@ -177,6 +177,10 @@ function FinalResult({result, noteId, topic, language = "English", initialExtras
       </div>
     </div>
 
+    <p role="note" className="text-sm text-amber-800">
+      AI can make mistakes. Please verify important information with trusted sources.
+    </p>
+
     {!quickRevision && <section className="break-inside-avoid print:break-inside-avoid">
       <SectionHeader icon="⭐" title="Sub Topics" color="indigo"/>
       {

@@ -17,7 +17,10 @@ function History() {
   const navigate = useNavigate()
   const { userData } = useSelector((state) => state.user)
   const credits = userData?.credits ?? 0
-  const [isSidebarOpen, setIsSidebarOpen] = useState(() => window.innerWidth >= 1024)
+  const [isDesktop, setIsDesktop] = useState(() =>
+    window.matchMedia("(min-width: 1024px)").matches
+  )
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false)
   const [selectedNote, setSelectedNote] = useState(null)
   const [loading, setLoading] = useState(false)
   const [activeNoteId, setActiveNotesId] = useState(null)
@@ -35,6 +38,17 @@ function History() {
   const [editedNotes, setEditedNotes] = useState("")
   const [savingNotes, setSavingNotes] = useState(false)
   const [editError, setEditError] = useState("")
+
+  useEffect(() => {
+    const desktopQuery = window.matchMedia("(min-width: 1024px)")
+    const syncSidebar = (event) => {
+      setIsDesktop(event.matches)
+      setIsSidebarOpen(false)
+    }
+
+    desktopQuery.addEventListener("change", syncSidebar)
+    return () => desktopQuery.removeEventListener("change", syncSidebar)
+  }, [])
 
   useEffect(() => {
     let isMounted = true
@@ -256,7 +270,7 @@ function History() {
 
       <div className='grid grid-cols-1 lg:grid-cols-4 gap-6'>
         <AnimatePresence>
-          {isSidebarOpen && (
+          {!isDesktop && isSidebarOpen && (
             <motion.button
               type="button"
               aria-label="Close notes sidebar"
@@ -268,7 +282,7 @@ function History() {
             />
           )}
 
-          {isSidebarOpen && (
+          {(isDesktop || isSidebarOpen) && (
             <motion.aside
               initial={{ x: -320 }}
               animate={{ x: 0 }}
