@@ -7,6 +7,21 @@ export const NOTE_LANGUAGES = [
 export const DEFAULT_NOTE_LANGUAGE = "English"
 export const NOTE_LANGUAGE_STORAGE_KEY = "examEnAi.notesLanguage"
 
+export const SPEECH_LANGUAGE_PREFERENCES = {
+  English: {
+    preferredTags: ["en-IN", "en-GB"],
+    voiceFamilies: ["en"]
+  },
+  Hindi: {
+    preferredTags: ["hi-IN"],
+    voiceFamilies: ["hi"]
+  },
+  Hinglish: {
+    preferredTags: ["en-IN", "hi-IN"],
+    voiceFamilies: ["en", "hi"]
+  }
+}
+
 export const isNoteLanguage = (value) =>
   NOTE_LANGUAGES.some((language) => language.value === value)
 

@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { useDispatch } from 'react-redux'
 import { motion } from 'motion/react'
 import MermaidSetup from './MermaidSetup'
@@ -6,6 +6,7 @@ import ReactMarkdown from 'react-markdown'
 import RechartSetUp from './RechartSetup.jsx'
 import Flashcards from './Flashcards'
 import Quiz from './Quiz'
+import ReadAloudControl from './ReadAloudControl'
 import { generateNoteExtra } from '../services/api'
 import { updateCredits } from '../redux/userSlice'
 
@@ -50,6 +51,12 @@ function FinalResult({result, noteId, topic, language = "English", initialExtras
   const [extraError, setExtraError] = useState("")
   const [selectedQuizIndex, setSelectedQuizIndex] = useState(null)
   const dispatch = useDispatch()
+  const noteSections = useMemo(
+    () => (typeof result?.notes === "string"
+      ? result.notes.split(/\n(?=#{1,6}\s)|\n\s*\n/).map((section) => section.trim()).filter(Boolean)
+      : []),
+    [result?.notes]
+  )
   const extraCosts = { flashcards: 3, quiz: 5, modelAnswers: 5 }
   const quizSets = Array.isArray(extras.quizSets) && extras.quizSets.length
     ? extras.quizSets
@@ -191,7 +198,18 @@ function FinalResult({result, noteId, topic, language = "English", initialExtras
     </section>}
 
     {!quickRevision && <section className="break-inside-avoid print:break-inside-avoid">
-      <SectionHeader icon="📝" title="Detailed Notes" color="purple"/>
+      <SectionHeader
+        icon="📝"
+        title="Detailed Notes"
+        color="purple"
+        action={(
+          <ReadAloudControl
+            key={language}
+            items={noteSections}
+            language={language}
+          />
+        )}
+      />
       <div className='bg-white border border-gray-200 rounded-xl p-6'>
         {notesEditor ?? (
           <ReactMarkdown components={MarkdownComponents}>
@@ -355,7 +373,7 @@ function FinalResult({result, noteId, topic, language = "English", initialExtras
 )
 }
 
-function SectionHeader({icon, title, color}){
+function SectionHeader({icon, title, color, action}){
   const colors = {
     indigo: "from-indigo-100 to-indigo-50 text-indigo-700",
     purple: "from-purple-100 to-purple-50 text-purple-700",
@@ -372,6 +390,7 @@ function SectionHeader({icon, title, color}){
     `}>
       <span>{icon}</span>
       <span>{title}</span>
+      {action && <div className="ml-auto">{action}</div>}
     </div>
   )
 }

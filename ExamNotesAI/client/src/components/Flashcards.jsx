@@ -6,7 +6,9 @@ const MotionButton = motion.button
 function Flashcards({cards}) {
   const [currentIndex, setCurrentIndex] = useState(0)
   const [flipped, setFlipped] = useState(false)
-  const card = cards[currentIndex]
+  const card = cards?.[currentIndex]
+
+  if (!card) return <p className="text-sm text-gray-500">No flashcards are available.</p>
 
   const changeCard = (index) => {
     setCurrentIndex(index)
