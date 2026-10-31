@@ -5,14 +5,20 @@ import { signInWithPopup } from 'firebase/auth';
 import{auth, provider} from '../utils/firebase'
 import axios from "axios"
 import { serverUrl } from '../App';
-import { useDispatch } from 'react-redux';
-import { setUserData } from '../redux/userSlice';
+import { useDispatch, useSelector } from 'react-redux';
+import {
+  cancelGoogleAuth,
+  completeGoogleAuth,
+  startGoogleAuth
+} from '../redux/userSlice';
 
 
 function Auth() {
   const dispatch = useDispatch()
+  const isGoogleAuthPending = useSelector((state) => state.user.isGoogleAuthPending)
 
   const handleGoogleAuth = async () => {
+    dispatch(startGoogleAuth())
     try{
       const response = await signInWithPopup(auth,provider)
       const User = response.user
@@ -21,7 +27,7 @@ function Auth() {
       const result = await axios.post(`${serverUrl}/api/auth/google`,{ name, email },
       { withCredentials: true }
     )
-    dispatch(setUserData(result.data))
+    dispatch(completeGoogleAuth(result.data))
 
     }catch(error){
       console.error("Google authentication failed:", {
@@ -29,6 +35,7 @@ function Auth() {
         message: error?.message,
         response: error?.response?.data
       })
+      dispatch(cancelGoogleAuth())
     }
   }
   return (
@@ -69,6 +76,7 @@ function Auth() {
 
           <motion.button
           onClick={handleGoogleAuth}
+          disabled={isGoogleAuthPending}
           whileHover={{
           y:-10,
           rotateX:8,
@@ -77,14 +85,14 @@ function Auth() {
           }}
           whileTap={{scale:0.97}}
           transition={{type:"spring", stiffness:200, damping:18}}
-          className='mt-10 px-10 py-3 rounded-xl
+          className='mt-10 px-10 py-3 rounded-xl disabled:cursor-wait disabled:opacity-70
           flex items-center gap-3
           bg-gradient-to-br from-black/90 via-black/80 to-black/90
           border border-white/10
           text-white font-semibold text-lg
           shadow-[0_25px_60px_rgba(0,0,0,0.7)]'>
             <FcGoogle size={22}/>
-            Continue with Google
+            {isGoogleAuthPending ? "Signing in..." : "Continue with Google"}
 
           </motion.button>
           <p className=' mt-6 max-w-xl text-lg
@@ -141,7 +149,6 @@ function Feature({ icon, title, des }) {
 }
 
 export default Auth
-
 
 
 

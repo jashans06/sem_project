@@ -15,16 +15,16 @@ export const serverUrl = import.meta.env.VITE_BACKEND_URL
 function App() {
   const dispatch = useDispatch()
   useEffect(()=>{
-    getCurrentUser(dispatch)
+    dispatch(getCurrentUser())
   },[dispatch])
 
-  const {userData} = useSelector((state)=>state.user)
+  const {userData, isGoogleAuthPending} = useSelector((state)=>state.user)
 
   return (
     <>
     <Routes>
       <Route path='/' element={userData ? <Home/> : <Navigate to="/auth" replace/>}/>
-      <Route path='/auth' element={userData ? <Navigate to="/" replace/> : <Auth/>}/>
+      <Route path='/auth' element={userData && !isGoogleAuthPending ? <Navigate to="/" replace/> : <Auth/>}/>
       <Route path='/history' element={userData ? <History/> : <Navigate to="/auth" replace/>}/>
       <Route path='/notes' element={userData ? <Notes/> : <Navigate to="/auth" replace/>}/>
       <Route path='/pricing' element={userData ? <Pricing/> : <Navigate to="/auth" replace/>}/>

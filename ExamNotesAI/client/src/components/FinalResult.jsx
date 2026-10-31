@@ -42,7 +42,7 @@ export const MarkdownComponents = {
       <li className="marker:text-indigo-500">{children}</li>
     ),
   }
-function FinalResult({result, noteId, topic, language = "English", initialExtras}) {
+function FinalResult({result, noteId, topic, language = "English", initialExtras, notesEditor}) {
   const[quickRevision, setQuickRevision] = useState(false);
   const [activeTab, setActiveTab] = useState("notes")
   const [extras, setExtras] = useState(initialExtras || {})
@@ -191,11 +191,13 @@ function FinalResult({result, noteId, topic, language = "English", initialExtras
     </section>}
 
     {!quickRevision && <section className="break-inside-avoid print:break-inside-avoid">
-      <SectionHeader icon="📝" title="Daitaled Notes" color="purple"/>
+      <SectionHeader icon="📝" title="Detailed Notes" color="purple"/>
       <div className='bg-white border border-gray-200 rounded-xl p-6'>
-        <ReactMarkdown components={MarkdownComponents}>
-          {result.notes}
-        </ReactMarkdown>
+        {notesEditor ?? (
+          <ReactMarkdown components={MarkdownComponents}>
+            {result.notes}
+          </ReactMarkdown>
+        )}
       </div>
     </section>}
 

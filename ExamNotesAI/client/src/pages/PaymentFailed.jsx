@@ -9,7 +9,7 @@ function PaymentFailed() {
   const navigate = useNavigate()
   useEffect(()=>{
 
-    getCurrentUser(dispatch)
+    dispatch(getCurrentUser())
 
     const t = setTimeout(() => {
 
@@ -19,7 +19,7 @@ function PaymentFailed() {
 
     return ()=>clearTimeout(t)
     
-  },[])
+  },[dispatch, navigate])
   return (
     <div className='min-h-screen flex flex-col items-center justify-center p-4 gap-4'>
       <motion.div

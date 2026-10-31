@@ -1,5 +1,6 @@
 import React, { useState, useEffect  } from "react"
 import { motion } from "motion/react"
+import { useLocation } from "react-router-dom"
 import { FiChevronDown } from "react-icons/fi"
 import * as pdfjsLib from "pdfjs-dist"
 import { generateNotes } from "../services/api"
@@ -22,19 +23,22 @@ const MAX_SOURCE_LENGTH = 15000
 const MAX_PDF_SIZE = 10 * 1024 * 1024
 
 function TopicForm({setResult, setNoteId, setTopic: setResultTopic, setLanguage: setResultLanguage, setLoading, loading, setError}) {
-    const [topic, setTopic] = useState("");
+    const location = useLocation()
+    const prefill = readPrefill(location.state?.prefill)
+    const [topic, setTopic] = useState(() => prefill?.topic ?? "");
     const [inputMode, setInputMode] = useState("topic");
     const [sourceText, setSourceText] = useState("");
     const [pdfName, setPdfName] = useState("");
     const [pdfTruncated, setPdfTruncated] = useState(false);
     const [pdfTooShort, setPdfTooShort] = useState(false);
     const [extractingPdf, setExtractingPdf] = useState(false);
-    const [classLevel, setClassLevel] = useState("");
-    const [examType, setExamType] = useState("");
-    const [language, setLanguage] = useState(getRememberedNoteLanguage);
-    const [revisionMode, setRevisionMode] = useState(false);
-    const [includeDiagram, setIncludeDiagram] = useState(false);
-    const [includeChart, setIncludeChart] = useState(false);
+    const [classLevel, setClassLevel] = useState(() => prefill?.classLevel ?? "");
+    const [examType, setExamType] = useState(() => prefill?.examType ?? "");
+    const [language, setLanguage] = useState(() => prefill?.language ?? getRememberedNoteLanguage());
+    const [revisionMode, setRevisionMode] = useState(() => prefill?.revisionMode ?? false);
+    const [includeDiagram, setIncludeDiagram] = useState(() => prefill?.includeDiagram ?? false);
+    const [includeChart, setIncludeChart] = useState(() => prefill?.includeChart ?? false);
+    const [showPrefillNotice, setShowPrefillNotice] = useState(Boolean(prefill));
     const [progress, setProgress] = useState(0);
     const [progressText, setProgressText] = useState("");
     const dispatch = useDispatch()
@@ -126,6 +130,7 @@ function TopicForm({setResult, setNoteId, setTopic: setResultTopic, setLanguage:
           setNoteId(result.noteId)
           setResultTopic(topic)
           setResultLanguage(result.language || DEFAULT_NOTE_LANGUAGE)
+          setShowPrefillNotice(false)
           setLoading(false)
           setClassLevel("")
           setTopic("")
@@ -214,6 +219,20 @@ function TopicForm({setResult, setNoteId, setTopic: setResultTopic, setLanguage:
             </button>
           ))}
         </div>
+
+        {showPrefillNotice && (
+          <div className="flex items-start justify-between gap-3 rounded-xl border border-indigo-300/20 bg-indigo-400/10 px-4 py-3 text-sm text-indigo-100">
+            <p>Prefilled from your earlier note. Generating will cost 10 credits.</p>
+            <button
+              type="button"
+              aria-label="Dismiss prefill notice"
+              onClick={() => setShowPrefillNotice(false)}
+              className="text-indigo-200 hover:text-white"
+            >
+              ✕
+            </button>
+          </div>
+        )}
 
         <input
         type="text"
@@ -376,6 +395,30 @@ function TopicForm({setResult, setNoteId, setTopic: setResultTopic, setLanguage:
 
     </motion.div>
   )
+}
+
+function readPrefill(value) {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return null
+  const { topic, classLevel, examType, language, revisionMode, includeDiagram, includeChart } = value
+  if (
+    typeof topic !== "string" ||
+    typeof classLevel !== "string" ||
+    typeof examType !== "string" ||
+    typeof revisionMode !== "boolean" ||
+    typeof includeDiagram !== "boolean" ||
+    typeof includeChart !== "boolean"
+  ) {
+    return null
+  }
+  return {
+    topic,
+    classLevel,
+    examType,
+    language: isNoteLanguage(language) ? language : DEFAULT_NOTE_LANGUAGE,
+    revisionMode,
+    includeDiagram,
+    includeChart
+  }
 }
 
 function Toggle({ label, checked, onChange }) {
