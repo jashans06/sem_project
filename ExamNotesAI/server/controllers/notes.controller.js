@@ -8,14 +8,14 @@ import {
 
 export const getMyNotes = async (req,res) => {
   try {
-    const notes = await Notes.find({user : req.userId}).select("topic classLevel examType language revisionMode includeDiagram includeChart hasSource createdAt").sort({createdAt: -1})
+    const notes = await Notes.find({user : req.userId}).select("topic classLevel examType language revisionMode includeDiagram includeChart smartStudySections hasSource createdAt").sort({createdAt: -1}).lean()
     if (!notes) {
       return res.status(404).json({
         error: "Notes not found"
       });
     }
     return res.status(200).json(notes.map((note) => ({
-      ...note.toObject(),
+      ...note,
       language: normalizeNoteLanguage(note.language)
     })))
   } catch (error) {

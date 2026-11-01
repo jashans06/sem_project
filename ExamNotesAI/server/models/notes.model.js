@@ -28,6 +28,10 @@ const notesSchema =  new mongoose.Schema({
 
     includeDiagram: Boolean,
     includeChart: Boolean,
+    smartStudySections: {
+        type: Boolean,
+        default: true
+    },
     hasSource: {
         type: Boolean,
         default: false

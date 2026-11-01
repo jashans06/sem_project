@@ -11,6 +11,7 @@ export const buildPrompt = ({
   revisionMode,
   includeDiagram,
   includeChart,
+  smartStudySections = true,
   sourceText,
   language = DEFAULT_NOTE_LANGUAGE
 }) => {
@@ -48,6 +49,7 @@ export const buildPrompt = ({
     Revision Mode: ${revisionMode ? "ON" : "OFF"}
     Include Diagram: ${includeDiagram ? "YES" : "NO"}
     Include Chart: ${includeChart ? "YES" : "NO"}
+    Smart Study Sections: ${smartStudySections ? "ON" : "OFF"}
     Output Language: ${outputLanguage}
     ${sourceSection}
 
@@ -131,6 +133,59 @@ export const buildPrompt = ({
         ]
     }
 
+    ${smartStudySections ? `
+    SMART STUDY SECTIONS:
+    Decide independently whether each section genuinely improves these notes. Extra sections
+    must be consistent with the notes above: terms must appear in or be explained by the notes;
+    examples must use concepts the notes explain; mistakes must concern covered material; and
+    mnemonics must help remember a list, sequence, classification, or group actually in the notes.
+    Include no section just to fill space. None is a perfectly good answer; prefer fewer, stronger
+    sections over weak additions. Judge relevance using the class level and exam type.
+
+    Include only sections that meet these rules:
+    - keyTerms: include only for at least 4 meaningful specialised terms worth defining; skip
+      topics with little specialised vocabulary.
+    - workedExample: include only for calculations, derivations, numerical problems, algorithms,
+      code or query tracing, balancing, or another procedure a student must perform step by step.
+      Skip purely descriptive or theoretical topics; never invent a fake calculation.
+    - commonMistakes: include only genuine, frequent exam errors, misconceptions, or easily confused
+      concepts. Never use generic advice such as "read the question carefully".
+    - mnemonics: include only when the notes contain lists, ordered stages, classifications, or
+      groups students must memorise, such as layers, types, properties, or steps.
+
+    Illustrations, not templates: a numerical physics topic may benefit from a worked example and
+    real common mistakes; a list-heavy networking topic may benefit from key terms and mnemonics
+    but not a worked example; a descriptive history topic may need only key terms or no sections.
+    Do not copy these illustrations as output.
+
+    Limits and content:
+    - keyTerms: normally 6 to 10 items, each with "term" and "meaning". In Revision Mode, use
+      4 to 5 items when included.
+    - workedExample: exactly one object with "title", "problem", "steps" (3 to 8 short strings),
+      and "answer".
+    - commonMistakes: 3 to 6 items, each with "mistake" and "correction".
+    - mnemonics: 1 to 3 items, each with "title" (what it helps remember), "mnemonic" (the trick),
+      and "explanation" (what each part stands for).
+    - If Revision Mode is ON, keep included sections very short: at most 5 key terms, 1 to 2
+      mnemonics, and at most 3 common mistakes. Include a worked example only if the topic truly
+      cannot be revised without one.
+    - With source material, base every section only on facts it supports. Mnemonics must use the
+      source's facts. Skip unsupported sections.
+    - Values in all extra sections must be plain text: no Markdown, emojis, tables, or code fences.
+      Use readable plain-text formulas. Keep each entry to one or two short sentences; each step
+      is one short sentence. Escape line breaks; never put literal line breaks inside JSON values.
+      Use straight double quotes only and avoid double quotes inside values (use single quotes).
+    - English values use simple English. Hindi meanings, explanations, corrections, and steps use
+      simple Devanagari; keep the key term in English and technical terms, units, and formulas in
+      English. Hinglish values use Roman letters only, never Devanagari. For Hindi mnemonics, use
+      an English acronym of the technical terms or a short Hindi rhyme or phrase and explain each
+      part; use Roman letters for Hinglish mnemonics. Keep all JSON keys in English and never
+      translate them.
+    ` : `
+    SMART STUDY SECTIONS:
+    Smart Study Sections are OFF. "extraSections" must be an empty object.
+    `}
+
     STRICT JSON FORMAT (DO NOT CHANGE):
     {
     "subTopics": {
@@ -141,6 +196,7 @@ export const buildPrompt = ({
     "importance": "⭐|⭐⭐|⭐⭐⭐",
     "notes": "string",
     "revisionPoints": [],
+    "extraSections": {},
     "questions": {
         "short": [],
         "long": [],
@@ -153,7 +209,7 @@ export const buildPrompt = ({
     "charts": []
     }
 
-    RETURN ONLY VALID JSON.
+    Return only valid JSON with no text outside it. Finish and close every JSON object and array.
 
   `;
 };
