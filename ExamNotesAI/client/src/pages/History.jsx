@@ -488,7 +488,8 @@ function History() {
                             language: selectedMetadata.language || "English",
                             revisionMode: Boolean(selectedMetadata.revisionMode),
                             includeDiagram: Boolean(selectedMetadata.includeDiagram),
-                            includeChart: Boolean(selectedMetadata.includeChart)
+                            includeChart: Boolean(selectedMetadata.includeChart),
+                            smartStudySections: selectedMetadata.smartStudySections
                           }
                         }
                       })
@@ -518,7 +519,7 @@ function History() {
                 notesEditor={isEditingNotes ? (
                   <div className="space-y-3">
                     <p className="text-xs text-gray-500">
-                      Only the detailed notes text is edited. Revision points and questions are not changed.
+                      Only the detailed notes text is edited. Extra sections, revision points and questions are not changed.
                     </p>
                     <textarea
                       aria-label="Edit detailed notes"

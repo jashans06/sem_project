@@ -57,6 +57,11 @@ function FinalResult({result, noteId, topic, language = "English", initialExtras
       : []),
     [result?.notes]
   )
+  const noteDisplay = useMemo(
+    () => splitFirstNoteHeading(result?.notes),
+    [result?.notes]
+  )
+  const extraSections = getValidExtraSections(result?.extraSections)
   const extraCosts = { flashcards: 3, quiz: 5, modelAnswers: 5 }
   const quizSets = Array.isArray(extras.quizSets) && extras.quizSets.length
     ? extras.quizSets
@@ -155,10 +160,9 @@ function FinalResult({result, noteId, topic, language = "English", initialExtras
 
     {activeTab === "notes" && <>
     <div className='flex flex-col md:flex-row md:items-center md:justify-between gap-4'>
-
       <h2 className='text-3xl font-bold
-      bg-gradient-to-r from-indigo-600 to-purple-600
-      bg-clip-text text-transparent'>
+        bg-gradient-to-r from-indigo-600 to-purple-600
+        bg-clip-text text-transparent'>
         📄 Generated Notes
       </h2>
 
@@ -177,63 +181,53 @@ function FinalResult({result, noteId, topic, language = "English", initialExtras
       </div>
     </div>
 
-    <p role="note" className="text-sm text-amber-800">
-      AI can make mistakes. Please verify important information with trusted sources.
-    </p>
-
-    {!quickRevision && <section className="break-inside-avoid print:break-inside-avoid">
-      <SectionHeader icon="⭐" title="Sub Topics" color="indigo"/>
-      {
-          Object.entries(result.subTopics).map(([star, topics])=>(
-            <div key={star} className='mb-3
-           '>
-
-              <p className='font-medium text-indigo-600 mb-1'>
-                {star} Priority
-              </p>
-              <ul className='list-disc ml-6 text-gray-700'>
-                {topics.map((t,i)=>(
-                  <li key={i}>{t}</li>
-                ))}
-              </ul>
-            </div>
-          ))
-        }
-    </section>}
-
-    {!quickRevision && <section className="break-inside-avoid print:break-inside-avoid">
+    {quickRevision ? (
+      <section className='break-inside-avoid print:break-inside-avoid rounded-xl bg-gradient-to-r from-green-100 to-green-50 border
+      border-green-200 p-6'>
+        <h3 className='font-bold text-green-700 mb-3 text-lg'>
+          ⚡ Exam Quick Revision Points
+        </h3>
+        <ul className='list-disc ml-6 space-y-1 text-gray-800'>
+          {result.revisionPoints.map((p,i)=>(
+            <li key={i}>{p}</li>
+          ))}
+        </ul>
+      </section>
+    ) : <section className="break-inside-avoid print:break-inside-avoid">
       <SectionHeader
         icon="📝"
         title="Detailed Notes"
         color="purple"
-        action={(
-          <ReadAloudControl
-            key={language}
-            items={noteSections}
-            language={language}
-          />
-        )}
       />
       <div className='bg-white border border-gray-200 rounded-xl p-6'>
         {notesEditor ?? (
-          <ReactMarkdown components={MarkdownComponents}>
-            {result.notes}
-          </ReactMarkdown>
+          <>
+            {noteDisplay.heading ? (
+              <div className="mb-4 flex flex-wrap items-center justify-between gap-3 border-b border-indigo-600 pb-2">
+                <h1 className="min-w-0 break-words text-2xl font-bold leading-relaxed text-indigo-700">
+                  {noteDisplay.heading.text}
+                </h1>
+                <ReadAloudControl
+                  key={language}
+                  items={noteSections}
+                  language={language}
+                />
+              </div>
+            ) : (
+              <div className="mb-4 flex justify-end">
+                <ReadAloudControl
+                  key={language}
+                  items={noteSections}
+                  language={language}
+                />
+              </div>
+            )}
+            <ReactMarkdown components={MarkdownComponents}>
+              {noteDisplay.remaining}
+            </ReactMarkdown>
+          </>
         )}
       </div>
-    </section>}
-
-    {quickRevision &&
-    <section className='break-inside-avoid print:break-inside-avoid rounded-xl bg-gradient-to-r from-green-100 to-green-50 border
-    border-green-200 p-6'>
-      <h3 className='font-bold text-green-700 mb-3 text-lg'>
-        ⚡ Exam Quick Revision Points
-      </h3>
-      <ul className='list-disc ml-6 space-y-1 text-gray-800'>
-        {result.revisionPoints.map((p,i)=>(
-          <li key={i}>{p}</li>
-        ))}
-      </ul>
     </section>}
 
     {result.diagram?.data && <section className="break-inside-avoid print:break-inside-avoid">
@@ -264,6 +258,86 @@ function FinalResult({result, noteId, topic, language = "English", initialExtras
         </p>
       )}
 
+      {!quickRevision && extraSections.keyTerms.length > 0 && (
+        <section className="break-inside-avoid print:break-inside-avoid">
+          <SectionHeader icon="📖" title="Key Terms" color="blue" />
+          <dl className="space-y-2">
+            {extraSections.keyTerms.map((item, index) => (
+              <div
+                key={`${item.term}-${index}`}
+                className="grid gap-1 rounded-lg border border-gray-200 p-3 md:grid-cols-[minmax(0,1fr)_2fr]"
+              >
+                <dt className="break-words font-semibold leading-relaxed text-gray-800">{item.term}</dt>
+                <dd className="break-words leading-relaxed text-gray-700">{item.meaning}</dd>
+              </div>
+            ))}
+          </dl>
+        </section>
+      )}
+
+      {!quickRevision && extraSections.workedExample && (
+        <section className="break-inside-avoid print:break-inside-avoid">
+          <SectionHeader icon="🧮" title="Worked Example" color="purple" />
+          <div className="space-y-4 rounded-xl border border-purple-200 bg-purple-50/60 p-5">
+            {extraSections.workedExample.title && (
+              <h3 className="break-words font-semibold leading-relaxed text-purple-800">
+                {extraSections.workedExample.title}
+              </h3>
+            )}
+            <div className="break-words whitespace-pre-wrap rounded-lg border border-indigo-100 bg-white p-4 leading-relaxed text-gray-800">
+              <span className="font-semibold text-indigo-700">Problem: </span>
+              {extraSections.workedExample.problem}
+            </div>
+            <ol className="list-decimal space-y-2 pl-6 leading-relaxed text-gray-700">
+              {extraSections.workedExample.steps.map((step, index) => (
+                <li key={`${step}-${index}`} className="break-words whitespace-pre-wrap">{step}</li>
+              ))}
+            </ol>
+            <div className="break-words whitespace-pre-wrap rounded-lg border border-green-200 bg-green-50 p-4 leading-relaxed text-gray-800">
+              <span className="font-semibold text-green-700">Answer: </span>
+              {extraSections.workedExample.answer}
+            </div>
+          </div>
+        </section>
+      )}
+
+      {!quickRevision && extraSections.commonMistakes.length > 0 && (
+        <section className="break-inside-avoid print:break-inside-avoid">
+          <SectionHeader icon="⚠️" title="Common Mistakes" color="rose" />
+          <div className="space-y-3">
+            {extraSections.commonMistakes.map((item, index) => (
+              <div key={`${item.mistake}-${index}`} className="space-y-2 rounded-xl border border-gray-200 p-4">
+                <p className="break-words whitespace-pre-wrap rounded-lg bg-red-50 p-3 leading-relaxed text-red-800">
+                  <span className="font-semibold">Mistake: </span>{item.mistake}
+                </p>
+                <p className="break-words whitespace-pre-wrap rounded-lg bg-green-50 p-3 leading-relaxed text-green-800">
+                  <span className="font-semibold">Correct idea: </span>{item.correction}
+                </p>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
+
+      {!quickRevision && extraSections.mnemonics.length > 0 && (
+        <section className="break-inside-avoid print:break-inside-avoid">
+          <SectionHeader icon="🧠" title="Mnemonics" color="green" />
+          <div className="space-y-3">
+            {extraSections.mnemonics.map((item, index) => (
+              <div key={`${item.title}-${index}`} className="break-inside-avoid rounded-xl border border-green-200 bg-green-50/60 p-5">
+                <h3 className="break-words font-semibold leading-relaxed text-green-800">{item.title}</h3>
+                <p className="my-2 break-words whitespace-pre-wrap text-lg font-bold leading-relaxed text-indigo-700">
+                  {item.mnemonic}
+                </p>
+                <p className="break-words whitespace-pre-wrap leading-relaxed text-gray-700">
+                  {item.explanation}
+                </p>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
+
     <section className="break-inside-avoid print:break-inside-avoid">
       <SectionHeader icon="❓" title="Important Questions" color="rose"/>
 
@@ -281,12 +355,36 @@ function FinalResult({result, noteId, topic, language = "English", initialExtras
         ))}
       </ul>
 
-      <p className='font-medium mt-4'>Diagram Question:</p>
-      <ul className='list-disc ml-6 text-gray-700'>
-        {result.questions?.diagram && <li>{result.questions.diagram}</li>}
-      </ul>
+      {typeof result.questions?.diagram === "string" && result.questions.diagram.trim() && (
+        <>
+          <p className='font-medium mt-4'>Diagram Question:</p>
+          <ul className='list-disc ml-6 text-gray-700'>
+            <li>{result.questions.diagram.trim()}</li>
+          </ul>
+        </>
+      )}
 
     </section>
+
+    {!quickRevision && <section className="break-inside-avoid print:break-inside-avoid">
+      <SectionHeader icon="⭐" title="Sub Topics" color="indigo"/>
+      {
+          Object.entries(result.subTopics).map(([star, topics])=>(
+            <div key={star} className='mb-3
+           '>
+
+              <p className='font-medium text-indigo-600 mb-1'>
+                {star} Priority
+              </p>
+              <ul className='list-disc ml-6 text-gray-700'>
+                {topics.map((t,i)=>(
+                  <li key={i}>{t}</li>
+                ))}
+              </ul>
+            </div>
+          ))
+        }
+    </section>}
     </>}
 
     {activeTab !== "notes" && (
@@ -373,6 +471,10 @@ function FinalResult({result, noteId, topic, language = "English", initialExtras
       </div>
     )}
 
+    <p role="note" className="text-sm text-amber-800">
+      AI can make mistakes. Please verify important information with trusted sources.
+    </p>
+
   </div>
 )
 }
@@ -397,6 +499,70 @@ function SectionHeader({icon, title, color, action}){
       {action && <div className="ml-auto">{action}</div>}
     </div>
   )
+}
+
+function splitFirstNoteHeading(markdown) {
+  if (typeof markdown !== "string") {
+    return { heading: null, remaining: "" }
+  }
+
+  const headingPattern = /^ {0,3}(#{1,6})[ \t]+(.+?)[ \t]*#*[ \t]*$/m
+  const match = headingPattern.exec(markdown)
+  if (!match) return { heading: null, remaining: markdown }
+
+  const heading = {
+    text: match[2].trim()
+  }
+  const remaining = `${markdown.slice(0, match.index)}${markdown.slice(match.index + match[0].length)}`
+  return { heading, remaining }
+}
+
+function getValidExtraSections(value) {
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    return { keyTerms: [], workedExample: null, commonMistakes: [], mnemonics: [] }
+  }
+
+  const keyTerms = getValidItems(value.keyTerms, ["term", "meaning"])
+  const commonMistakes = getValidItems(value.commonMistakes, ["mistake", "correction"])
+  const mnemonics = getValidItems(value.mnemonics, ["title", "mnemonic", "explanation"])
+  const example = value.workedExample
+  let workedExample = null
+  if (example && typeof example === "object" && !Array.isArray(example)) {
+    const problem = cleanSectionText(example.problem)
+    const answer = cleanSectionText(example.answer)
+    const steps = Array.isArray(example.steps)
+      ? example.steps.map(cleanSectionText).filter(Boolean)
+      : []
+    if (problem && answer && steps.length >= 2) {
+      workedExample = {
+        title: cleanSectionText(example.title),
+        problem,
+        steps,
+        answer
+      }
+    }
+  }
+
+  return { keyTerms, workedExample, commonMistakes, mnemonics }
+}
+
+function getValidItems(items, fields) {
+  if (!Array.isArray(items)) return []
+  return items.reduce((validItems, item) => {
+    if (!item || typeof item !== "object" || Array.isArray(item)) return validItems
+    const normalized = {}
+    for (const field of fields) {
+      const value = cleanSectionText(item[field])
+      if (!value) return validItems
+      normalized[field] = value
+    }
+    validItems.push(normalized)
+    return validItems
+  }, [])
+}
+
+function cleanSectionText(value) {
+  return typeof value === "string" ? value.trim() : ""
 }
 
 export default FinalResult

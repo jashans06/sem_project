@@ -21,6 +21,7 @@ pdfjsLib.GlobalWorkerOptions.workerSrc = new URL(
 
 const MAX_SOURCE_LENGTH = 15000
 const MAX_PDF_SIZE = 10 * 1024 * 1024
+const SMART_STUDY_STORAGE_KEY = "examEnAi.smartStudySections"
 
 function TopicForm({setResult, setNoteId, setTopic: setResultTopic, setLanguage: setResultLanguage, setLoading, loading, setError}) {
     const location = useLocation()
@@ -38,6 +39,9 @@ function TopicForm({setResult, setNoteId, setTopic: setResultTopic, setLanguage:
     const [revisionMode, setRevisionMode] = useState(() => prefill?.revisionMode ?? false);
     const [includeDiagram, setIncludeDiagram] = useState(() => prefill?.includeDiagram ?? false);
     const [includeChart, setIncludeChart] = useState(() => prefill?.includeChart ?? false);
+    const [smartStudySections, setSmartStudySections] = useState(
+      () => prefill?.smartStudySections ?? getRememberedSmartStudySections()
+    )
     const [showPrefillNotice, setShowPrefillNotice] = useState(Boolean(prefill));
     const [progress, setProgress] = useState(0);
     const [progressText, setProgressText] = useState("");
@@ -46,6 +50,10 @@ function TopicForm({setResult, setNoteId, setTopic: setResultTopic, setLanguage:
     useEffect(() => {
       rememberNoteLanguage(language)
     }, [language])
+
+    useEffect(() => {
+      rememberSmartStudySections(smartStudySections)
+    }, [smartStudySections])
 
     const handlePdfUpload = async (event) => {
       const file = event.target.files?.[0]
@@ -124,6 +132,7 @@ function TopicForm({setResult, setNoteId, setTopic: setResultTopic, setLanguage:
           revisionMode,
           includeDiagram,
           includeChart,
+          smartStudySections,
           language,
           sourceText: inputMode === "topic" ? undefined : sourceText.trim()})
           setResult(result.data)
@@ -348,6 +357,18 @@ function TopicForm({setResult, setNoteId, setTopic: setResultTopic, setLanguage:
 
             <Toggle label="Include Charts" checked={includeChart} 
             onChange={() => setIncludeChart(!includeChart)} />
+
+            <div className="flex flex-col gap-2">
+              <Toggle
+                label="Smart study sections"
+                checked={smartStudySections}
+                onChange={() => setSmartStudySections(!smartStudySections)}
+                disabled={loading}
+              />
+              <p className="max-w-sm text-xs leading-relaxed text-gray-400">
+                Adds Key Terms, a Worked Example, Common Mistakes or Mnemonics only when the topic needs them. Can make generation a little slower. Cost stays 10 credits.
+              </p>
+            </div>
         </div>
 
         <motion.button
@@ -417,13 +438,39 @@ function readPrefill(value) {
     language: isNoteLanguage(language) ? language : DEFAULT_NOTE_LANGUAGE,
     revisionMode,
     includeDiagram,
-    includeChart
+    includeChart,
+    smartStudySections: typeof value.smartStudySections === "boolean"
+      ? value.smartStudySections
+      : undefined
   }
 }
 
-function Toggle({ label, checked, onChange }) {
+function getRememberedSmartStudySections() {
+  try {
+    const value = window.localStorage.getItem(SMART_STUDY_STORAGE_KEY)
+    return value === "false" ? false : true
+  } catch {
+    return true
+  }
+}
+
+function rememberSmartStudySections(value) {
+  try {
+    window.localStorage.setItem(SMART_STUDY_STORAGE_KEY, String(value))
+  } catch {
+    // Storage can be unavailable in private or restricted browsing contexts.
+  }
+}
+
+function Toggle({ label, checked, onChange, disabled = false }) {
   return (
-    <div className='flex items-center gap-4 cursor-pointer select-none' onClick={onChange}>
+    <div
+      className={`flex items-center gap-4 select-none ${disabled ? "cursor-not-allowed opacity-60" : "cursor-pointer"}`}
+      onClick={() => {
+        if (!disabled) onChange()
+      }}
+      aria-disabled={disabled}
+    >
       <motion.div
         animate={{
           backgroundColor: checked
