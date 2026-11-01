@@ -358,17 +358,12 @@ function TopicForm({setResult, setNoteId, setTopic: setResultTopic, setLanguage:
             <Toggle label="Include Charts" checked={includeChart} 
             onChange={() => setIncludeChart(!includeChart)} />
 
-            <div className="flex flex-col gap-2">
-              <Toggle
-                label="Smart study sections"
-                checked={smartStudySections}
-                onChange={() => setSmartStudySections(!smartStudySections)}
-                disabled={loading}
-              />
-              <p className="max-w-sm text-xs leading-relaxed text-gray-400">
-                Adds Key Terms, a Worked Example, Common Mistakes or Mnemonics only when the topic needs them. Can make generation a little slower. Cost stays 10 credits.
-              </p>
-            </div>
+            <Toggle
+              label="Smart study sections"
+              checked={smartStudySections}
+              onChange={() => setSmartStudySections(!smartStudySections)}
+              disabled={loading}
+            />
         </div>
 
         <motion.button
