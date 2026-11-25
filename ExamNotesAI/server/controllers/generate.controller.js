@@ -1,9 +1,33 @@
 import UserModel from "../models/user.model.js"
-import { generateGeminiResponse } from "../services/gemini.services.js"
+import {
+  generateGeminiResponse,
+  GeminiServiceError
+} from "../services/gemini.services.js"
 import { buildPrompt } from "../utils/promptBuilder.js"
 import Notes from "../models/notes.model.js"
 import { chargeCredits, refundCredits } from "../utils/credits.js"
 import { normalizeNoteLanguage } from "../utils/noteLanguages.js"
+
+const INVALID_TOPIC_MESSAGES = {
+  off_topic: "That looks like a general query, not a study topic. Enter a subject, chapter, or academic concept to generate notes and quiz questions.",
+  too_narrow: "That is too narrow for useful notes and quiz questions. Try a broader topic, such as “addition of integers” instead of “2+2”.",
+  unclear: "I couldn't identify a clear study topic. Please rephrase it as a subject, chapter, or academic concept."
+}
+const STANDALONE_ARITHMETIC_PATTERN = /^[0-9\s()+*/×÷=.^%-]+$/u
+
+const respondInsufficientCredits = async (req, res, user = null) => {
+  const currentUser = user || await UserModel.findById(req.userId)
+  if (!currentUser) {
+    return res.status(400).json({ message: "user is not found" })
+  }
+  if (currentUser.credits < 10 && currentUser.isCreditAvailable) {
+    await UserModel.updateOne(
+      { _id: req.userId, credits: { $lt: 10 } },
+      { $set: { isCreditAvailable: false } }
+    )
+  }
+  return res.status(403).json({ message: "Insufficient credits" })
+}
 
 export const generateNotes = async (req, res) => {
   let chargedUser = null
@@ -26,8 +50,20 @@ export const generateNotes = async (req, res) => {
       ? requestedSmartStudySections
       : true
 
-    if(!topic){
-      return res.status(400).json({message:"Topic is required"})
+    const normalizedTopic = typeof topic === "string" ? topic.trim() : ""
+    if (!normalizedTopic) {
+      return res.status(400).json({ message: "Topic is required" })
+    }
+    if (normalizedTopic.length > 300) {
+      return res.status(400).json({
+        message: "Topic must be 300 characters or fewer"
+      })
+    }
+    if (STANDALONE_ARITHMETIC_PATTERN.test(normalizedTopic)) {
+      return res.status(422).json({
+        error: "Invalid study topic",
+        message: INVALID_TOPIC_MESSAGES.too_narrow
+      })
     }
     if (sourceText !== undefined &&
       (typeof sourceText !== "string" || sourceText.length > 15000)) {
@@ -36,25 +72,16 @@ export const generateNotes = async (req, res) => {
       })
     }
 
-    chargedUser = await chargeCredits(req.userId, 10)
-    if (!chargedUser) {
-      const user = await UserModel.findById(req.userId)
-      if (!user) {
-        return res.status(400).json({message:"user is not found"})
-      }
-      if (user.credits < 10 && user.isCreditAvailable) {
-        await UserModel.updateOne(
-          { _id: req.userId, credits: { $lt: 10 } },
-          { $set: { isCreditAvailable: false } }
-        )
-      }
-      return res.status(403).json({
-        message: "Insufficient credits"
-      });
+    const creditUser = await UserModel.findById(req.userId)
+    if (!creditUser) {
+      return res.status(400).json({ message: "user is not found" })
+    }
+    if (creditUser.credits < 10) {
+      return respondInsufficientCredits(req, res, creditUser)
     }
 
     const prompt = buildPrompt({
-        topic,
+        topic: normalizedTopic,
         classLevel,
         examType,
         revisionMode,
@@ -65,7 +92,42 @@ export const generateNotes = async (req, res) => {
         language
     });
 
-    const aiResponse = await generateGeminiResponse(prompt);
+    const generationResult = await generateGeminiResponse(prompt)
+    if (
+      !generationResult ||
+      typeof generationResult !== "object" ||
+      Array.isArray(generationResult)
+    ) {
+      return res.status(502).json({
+        message: "We couldn't check that input. Please enter a clear study topic and try again."
+      })
+    }
+    if (generationResult.status === "invalid") {
+      const reason = Object.hasOwn(INVALID_TOPIC_MESSAGES, generationResult.reason)
+        ? generationResult.reason
+        : "unclear"
+      return res.status(422).json({
+        error: "Invalid study topic",
+        message: INVALID_TOPIC_MESSAGES[reason]
+      })
+    }
+    if (
+      generationResult.status !== "valid" ||
+      !generationResult.note ||
+      typeof generationResult.note !== "object" ||
+      Array.isArray(generationResult.note)
+    ) {
+      return res.status(502).json({
+        message: "We couldn't check that input. Please enter a clear study topic and try again."
+      })
+    }
+
+    chargedUser = await chargeCredits(req.userId, 10)
+    if (!chargedUser) {
+      return respondInsufficientCredits(req, res)
+    }
+
+    const aiResponse = generationResult.note
     normalizeExtraSections(aiResponse, smartStudySections)
     const generatedText = JSON.stringify(aiResponse)
     if (
@@ -77,7 +139,7 @@ export const generateNotes = async (req, res) => {
 
     createdNote = await Notes.create({
         user: chargedUser._id,
-        topic,
+        topic: normalizedTopic,
         classLevel,
         examType,
         revisionMode,
@@ -138,7 +200,13 @@ export const generateNotes = async (req, res) => {
         console.error("Failed to refund credits:", refundError)
       }
     }
-    console.error("FULL ERROR:", error.message, error.stack);  // ← changed
+    console.error("FULL ERROR:", error.message, error.stack);
+    if (error instanceof GeminiServiceError && error.status === 503) {
+      return res.status(503).json({
+        error: "AI service temporarily unavailable",
+        message: "Notes could not be generated because the AI service is busy. Please try again in a minute."
+      })
+    }
     res.status(500).json({
       error: "AI generation failed",
       message: error.message
