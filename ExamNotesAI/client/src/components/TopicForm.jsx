@@ -43,8 +43,7 @@ function TopicForm({setResult, setNoteId, setTopic: setResultTopic, setLanguage:
       () => prefill?.smartStudySections ?? getRememberedSmartStudySections()
     )
     const [showPrefillNotice, setShowPrefillNotice] = useState(Boolean(prefill));
-    const [progress, setProgress] = useState(0);
-    const [progressText, setProgressText] = useState("");
+    const [generationSeconds, setGenerationSeconds] = useState(0)
     const dispatch = useDispatch()
 
     useEffect(() => {
@@ -126,7 +125,7 @@ function TopicForm({setResult, setNoteId, setTopic: setResultTopic, setLanguage:
       setResultTopic("")
       try {
         const result = await generateNotes({
-          topic,
+          topic: topic.trim(),
           classLevel,
           examType,
           revisionMode,
@@ -137,7 +136,7 @@ function TopicForm({setResult, setNoteId, setTopic: setResultTopic, setLanguage:
           sourceText: inputMode === "topic" ? undefined : sourceText.trim()})
           setResult(result.data)
           setNoteId(result.noteId)
-          setResultTopic(topic)
+          setResultTopic(topic.trim())
           setResultLanguage(result.language || DEFAULT_NOTE_LANGUAGE)
           setShowPrefillNotice(false)
           setLoading(false)
@@ -158,8 +157,12 @@ function TopicForm({setResult, setNoteId, setTopic: setResultTopic, setLanguage:
           }
 
       } catch (error) {
-        console.log(error)
-        setError("failed to fetch notes from server")
+        console.error("Notes generation failed:", error.response?.data ?? error)
+        setError(
+          error.response?.data?.message ||
+          error.response?.data?.error ||
+          "Could not generate notes. Please try again."
+        )
         setLoading(false)
 
       }
@@ -167,30 +170,13 @@ function TopicForm({setResult, setNoteId, setTopic: setResultTopic, setLanguage:
 
     useEffect(() => {
       if (!loading) {
-        setProgress(0);
-        setProgressText("")
+        setGenerationSeconds(0)
         return;
       }
-      let value = 0;
-
+      const startedAt = Date.now()
       const interval = setInterval(() => {
-        value += Math.random() * 8
-
-        if (value >= 95) {
-          value = 95;
-          setProgressText("Almost done...");
-          clearInterval(interval);
-        } else if (value > 70) {
-          setProgressText("Finalizing notes...");
-        } else if (value > 40) {
-          setProgressText("Processing content...");
-        } else {
-          setProgressText("Generating notes...");
-        }
-        
-        setProgress(Math.floor(value))
-
-      }, 700)
+        setGenerationSeconds(Math.floor((Date.now() - startedAt) / 1000))
+      }, 1000)
       
       return () => clearInterval(interval);
 
@@ -251,6 +237,7 @@ function TopicForm({setResult, setNoteId, setTopic: setResultTopic, setLanguage:
         text-white 
         focus:outline-none focus:ring-2 focus:ring-white/30"
         placeholder="Enter topic (e.g. Web Development)"
+        maxLength={300}
         onChange={(e) => setTopic(e.target.value)}
         value={topic}/>
 
@@ -385,26 +372,21 @@ function TopicForm({setResult, setNoteId, setTopic: setResultTopic, setLanguage:
 
         { loading &&
         <div className='mt-4 space-y-2'>
-
         <div className='w-full h-2 rounded-full bg-white/10 overflow-hidden'>
           <motion.div
-            initial={{width:0}}
-            animate={{width : `${progress}%` }}
-            transition={{ ease: "easeOut", duration: 0.6 }}
-            className='h-full bg-gradient-to-r from-green-400 via-emerald-400 to-green-500'
-          >
-          </motion.div>
-
+            initial={{ x: "-100%" }}
+            animate={{ x: "300%" }}
+            transition={{ ease: "linear", duration: 1.5, repeat: Infinity }}
+            className='h-full w-1/3 bg-gradient-to-r from-green-400 via-emerald-400 to-green-500'
+          />
         </div>
-
         <div className='flex justify-between text-xs text-gray-300'>
-          <span>{progressText}</span>
-          <span>{progress}%</span>
+          <span>Generating your notes...</span>
+          <span>{generationSeconds}s elapsed</span>
         </div>
         <p className='text-xs text-gray-400 text-center'>
-        This may take up to 2-5 minutes. Please don't close refresh the page.
+          Detailed or source-based notes can take longer. Please keep this page open while generation finishes.
         </p>
-
       </div>}
 
 

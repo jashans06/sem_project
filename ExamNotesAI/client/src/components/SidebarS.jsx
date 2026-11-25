@@ -92,19 +92,20 @@ function SidebarS({result}) {
 
         </div>
 
-        <div className='mb-4
-        rounded-lg
-        bg-blue-50
-        border border-blue-200
-        p-3'>
-          <p className='text-sm font-medium text-blue-700 mb-2'>
-            Diagram Question
-          </p>
-          <ul className='list-disc ml-4 text-sm text-gray-700 space-y-1'>
-            <li>{result.questions.diagram}</li>
-          </ul>
-
-        </div>
+        {typeof result.questions.diagram === "string" && result.questions.diagram.trim() && (
+          <div className='mb-4
+          rounded-lg
+          bg-blue-50
+          border border-blue-200
+          p-3'>
+            <p className='text-sm font-medium text-blue-700 mb-2'>
+              Diagram Question
+            </p>
+            <ul className='list-disc ml-4 text-sm text-gray-700 space-y-1'>
+              <li>{result.questions.diagram.trim()}</li>
+            </ul>
+          </div>
+        )}
 
 
         

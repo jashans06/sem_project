@@ -11,10 +11,10 @@ function Quiz({noteId, questions, onQuit, onGenerateAnother, nextQuizCost}) {
   const selectedAnswer = answers[questionIndex]
 
   const selectAnswer = (optionIndex) => {
-    if (selectedAnswer !== null) return
-    const nextAnswers = [...answers]
-    nextAnswers[questionIndex] = optionIndex
-    setAnswers(nextAnswers)
+    if (selectedAnswer !== null) return;
+    const nextAnswers = [...answers];
+    nextAnswers[questionIndex] = optionIndex;
+    setAnswers(nextAnswers);
   }
 
   const finishQuiz = async () => {
